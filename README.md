@@ -1,2 +1,400 @@
 # self-report
 삼구FS_전북센터(BGF푸드) 근로자 자기신고서(일일 근태)
+[mobile_self_report_app.html](https://github.com/user-attachments/files/30481937/mobile_self_report_app.html)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트 자기신고서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        /* Hide scrollbar for cleaner mobile look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        .page-transition {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .hidden-page {
+            transform: translateX(100%);
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+        }
+        .active-page {
+            transform: translateX(0);
+            opacity: 1;
+            position: relative;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen overflow-hidden flex flex-col relative">
+
+    <!-- Top App Bar -->
+    <header class="bg-white shadow-sm z-10 sticky top-0">
+        <div class="px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 text-white p-1.5 rounded-lg">
+                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                </div>
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight">스마트 자기신고서</h1>
+            </div>
+            <div class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                <span id="displayDate">7/29 (수)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative w-full overflow-hidden">
+        
+        <!-- PAGE 1: Line Selection -->
+        <div id="page-lines" class="page-transition active-page w-full h-full p-4 flex flex-col">
+            
+            <div class="mb-5 text-center">
+                <h2 class="text-xl font-extrabold text-slate-800 mb-1">소속 라인을 선택하세요</h2>
+                <p class="text-sm text-slate-500">본인의 작업 라인을 터치하여 명단을 확인하세요.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6" id="lineGrid">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <div class="mt-auto bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+                <i data-lucide="info" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>
+                <div>
+                    <p class="text-sm font-bold text-blue-900">건강 이상 신고 안내</p>
+                    <p class="text-xs text-blue-700 mt-1">발열, 상처, 기타 건강 이상이 있는 경우 반드시 명단 우측의 <i data-lucide="stethoscope" class="w-3 h-3 inline"></i> 아이콘을 눌러 신고해 주세요.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: Worker List -->
+        <div id="page-workers" class="page-transition hidden-page w-full h-full p-0 flex flex-col bg-white">
+            
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+                <button id="btnBackToLines" class="p-2 -ml-2 rounded-full hover:bg-slate-200 active:bg-slate-300 transition text-slate-600">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800" id="selectedLineTitle">라인 이름</h2>
+                    <p class="text-xs text-slate-500">출근 예정 인원 명단</p>
+                </div>
+                <div class="ml-auto bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full">
+                    <span id="workerCountBadge">0</span>명
+                </div>
+            </div>
+
+            <!-- Health Checklist Banner -->
+            <div class="bg-amber-50 border-b border-amber-100 p-3 px-4">
+                <p class="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1.5">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    작업 전 자가 진단 항목
+                </p>
+                <div class="grid grid-cols-2 gap-2 text-[11px] text-amber-700">
+                    <div class="flex items-center gap-1"><div class="w-1 h-1 rounded-full bg-amber-500"></div>손 상처 확인</div>
+                    <div class="flex items-center gap-1"><div class="w-1 h-1 rounded-full bg-amber-500"></div>설사/구토 여부</div>
+                    <div class="flex items-center gap-1"><div class="w-1 h-1 rounded-full bg-amber-500"></div>손톱 단정 여부</div>
+                    <div class="flex items-center gap-1"><div class="w-1 h-1 rounded-full bg-amber-500"></div>감기 증상 여부</div>
+                </div>
+            </div>
+
+            <!-- Worker List -->
+            <div class="flex-1 overflow-y-auto p-2" id="workerListContainer">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Health Triage Modal (Bottom Sheet Style) -->
+    <div id="modalHealthTriage" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 transition-opacity opacity-0 pointer-events-none flex flex-col justify-end">
+        <div id="modalContent" class="bg-white rounded-t-2xl w-full max-h-[85vh] flex flex-col transform translate-y-full transition-transform duration-300">
+            
+            <div class="flex justify-center pt-3 pb-1">
+                <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+            </div>
+
+            <div class="px-5 pb-3 border-b border-slate-100 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-100 p-1.5 rounded-lg text-amber-600">
+                        <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-800">건강 이상 신고</h3>
+                </div>
+                <button id="btnCloseHealthModal" class="p-2 rounded-full bg-slate-100 text-slate-500 active:bg-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-5">
+                
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 mb-0.5">대상 작업자</p>
+                        <p class="font-bold text-lg text-slate-800" id="modalWorkerName">이름</p>
+                    </div>
+                    <div class="bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-md" id="modalWorkerLine">
+                        소속 라인
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sm text-slate-700 mb-2">이상 증상 선택 (다중 선택 가능)</label>
+                    <div class="grid grid-cols-2 gap-2" id="symptomChips">
+                        <button class="symptom-chip border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 transition" data-val="손 상처(베임/긁힘)">손 상처</button>
+                        <button class="symptom-chip border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 transition" data-val="감기 증상(기침/발열)">감기/발열</button>
+                        <button class="symptom-chip border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 transition" data-val="소화기 이상(설사/구토)">설사/구토</button>
+                        <button class="symptom-chip border border-slate-300 rounded-lg py-2 text-sm font-medium text-slate-600 transition" data-val="기타 컨디션 난조">기타</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sm text-slate-700 mb-2">상세 내용 입력 (선택사항)</label>
+                    <textarea id="modalHealthSymptoms" rows="2" placeholder="증상에 대해 추가로 설명해 주세요." class="w-full border border-slate-300 rounded-xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"></textarea>
+                </div>
+                
+                <button id="btnSubmitTriage" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-lg">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    관리자에게 신고하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none z-50 text-sm font-medium whitespace-nowrap">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toastMessage">신고가 완료되었습니다.</span>
+    </div>
+
+    <script>
+        // Data derived from the dashboard
+        const lines = ["관리/행정", "도시락 1라인", "도시락 2라인", "도시락 3라인", "취반실", "생산관리"];
+        
+        // Simulating data where 'tomorrow' is 'A' (Attending)
+        const employees = [
+            { id: 1, name: "임윤상", line: "관리/행정", status: "ok" },
+            { id: 2, name: "이아름", line: "관리/행정", status: "ok" },
+            { id: 3, name: "박해린", line: "관리/행정", status: "ok" },
+            { id: 4, name: "조명자", line: "도시락 1라인", status: "ok" },
+            { id: 5, name: "박인숙", line: "도시락 1라인", status: "ok" },
+            { id: 6, name: "정미진", line: "도시락 1라인", status: "ok" },
+            { id: 8, name: "한덕숙", line: "도시락 1라인", status: "ok" },
+            { id: 9, name: "윤한지", line: "도시락 2라인", status: "ok" },
+            { id: 11, name: "윤수란", line: "도시락 2라인", status: "ok" },
+            { id: 12, name: "김이현", line: "도시락 2라인", status: "ok" },
+            { id: 13, name: "윤경화", line: "도시락 3라인", status: "ok" },
+            { id: 15, name: "박순실", line: "도시락 3라인", status: "ok" },
+            { id: 16, name: "고문수", line: "도시락 3라인", status: "ok" },
+            { id: 17, name: "이승구", line: "취반실", status: "ok" },
+            { id: 19, name: "송봉석", line: "취반실", status: "ok" },
+            { id: 20, name: "정부례", line: "생산관리", status: "ok" }
+        ];
+
+        let selectedSymptoms = [];
+        let currentWorker = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Set Date
+            const today = new Date();
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            document.getElementById('displayDate').textContent = `${today.getMonth() + 1}/${today.getDate()} (${days[today.getDay()]})`;
+
+            renderLineGrid();
+
+            // Event Listeners
+            document.getElementById('btnBackToLines').addEventListener('click', navigateToLines);
+            document.getElementById('btnCloseHealthModal').addEventListener('click', closeHealthModal);
+            document.getElementById('btnSubmitTriage').addEventListener('click', submitHealthReport);
+            
+            // Modal Backdrop Click
+            document.getElementById('modalHealthTriage').addEventListener('click', (e) => {
+                if (e.target.id === 'modalHealthTriage') closeHealthModal();
+            });
+
+            // Symptom Chips
+            document.querySelectorAll('.symptom-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    const val = e.target.getAttribute('data-val');
+                    if (selectedSymptoms.includes(val)) {
+                        selectedSymptoms = selectedSymptoms.filter(s => s !== val);
+                        e.target.classList.remove('bg-amber-100', 'border-amber-400', 'text-amber-700');
+                        e.target.classList.add('border-slate-300', 'text-slate-600');
+                    } else {
+                        selectedSymptoms.push(val);
+                        e.target.classList.add('bg-amber-100', 'border-amber-400', 'text-amber-700');
+                        e.target.classList.remove('border-slate-300', 'text-slate-600');
+                    }
+                });
+            });
+        });
+
+        function renderLineGrid() {
+            const grid = document.getElementById('lineGrid');
+            grid.innerHTML = '';
+
+            const icons = {
+                "관리/행정": "briefcase",
+                "도시락 1라인": "utensils",
+                "도시락 2라인": "utensils",
+                "도시락 3라인": "utensils",
+                "취반실": "flame",
+                "생산관리": "clipboard-list"
+            };
+
+            lines.forEach(line => {
+                const count = employees.filter(e => e.line === line).length;
+                const btn = document.createElement('button');
+                btn.className = "bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:bg-slate-50 transition active:scale-95";
+                btn.innerHTML = `
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-full mb-1">
+                        <i data-lucide="${icons[line] || 'layers'}" class="w-6 h-6"></i>
+                    </div>
+                    <span class="font-bold text-slate-800 text-[15px]">${line}</span>
+                    <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${count}명</span>
+                `;
+                btn.onclick = () => navigateToWorkers(line);
+                grid.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function renderWorkerList(lineName) {
+            const container = document.getElementById('workerListContainer');
+            container.innerHTML = '';
+            
+            const lineWorkers = employees.filter(e => e.line === lineName);
+            document.getElementById('selectedLineTitle').textContent = lineName;
+            document.getElementById('workerCountBadge').textContent = lineWorkers.length;
+
+            if (lineWorkers.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-40 text-slate-400">
+                        <i data-lucide="users-2" class="w-10 h-10 mb-2 opacity-50"></i>
+                        <p class="text-sm">출근 예정 인원이 없습니다.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            lineWorkers.forEach((worker, index) => {
+                const item = document.createElement('div');
+                item.className = "bg-white border border-slate-200 rounded-xl p-3.5 mb-2.5 flex items-center justify-between shadow-sm";
+                
+                let statusBadge = worker.status === 'ok' 
+                    ? `<span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded font-bold ml-2">정상</span>`
+                    : `<span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-bold ml-2">이상보고</span>`;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-mono text-sm font-bold">
+                            ${index + 1}
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-bold text-slate-800 text-[15px]">${worker.name}</span>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                    <button onclick="openHealthModal(${worker.id})" class="p-2.5 rounded-xl ${worker.status === 'ok' ? 'bg-amber-50 text-amber-600 active:bg-amber-100' : 'bg-slate-100 text-slate-400'} transition" ${worker.status !== 'ok' ? 'disabled' : ''}>
+                        <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function navigateToWorkers(lineName) {
+            renderWorkerList(lineName);
+            document.getElementById('page-lines').classList.remove('active-page');
+            document.getElementById('page-lines').classList.add('hidden-page');
+            document.getElementById('page-workers').classList.remove('hidden-page');
+            document.getElementById('page-workers').classList.add('active-page');
+        }
+
+        function navigateToLines() {
+            document.getElementById('page-workers').classList.remove('active-page');
+            document.getElementById('page-workers').classList.add('hidden-page');
+            document.getElementById('page-lines').classList.remove('hidden-page');
+            document.getElementById('page-lines').classList.add('active-page');
+        }
+
+        function openHealthModal(workerId) {
+            currentWorker = employees.find(e => e.id === workerId);
+            if (!currentWorker) return;
+
+            document.getElementById('modalWorkerName').textContent = currentWorker.name;
+            document.getElementById('modalWorkerLine').textContent = currentWorker.line;
+            
+            // Reset form
+            selectedSymptoms = [];
+            document.getElementById('modalHealthSymptoms').value = '';
+            document.querySelectorAll('.symptom-chip').forEach(chip => {
+                chip.classList.remove('bg-amber-100', 'border-amber-400', 'text-amber-700');
+                chip.classList.add('border-slate-300', 'text-slate-600');
+            });
+
+            const modal = document.getElementById('modalHealthTriage');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            // Small delay for sliding animation
+            setTimeout(() => {
+                content.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        function closeHealthModal() {
+            const modal = document.getElementById('modalHealthTriage');
+            const content = document.getElementById('modalContent');
+            
+            content.classList.add('translate-y-full');
+            // Wait for slide down before hiding backdrop
+            setTimeout(() => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                currentWorker = null;
+            }, 300);
+        }
+
+        function submitHealthReport() {
+            if (!currentWorker) return;
+            
+            if (selectedSymptoms.length === 0 && document.getElementById('modalHealthSymptoms').value.trim() === '') {
+                alert('이상 증상을 선택하거나 상세 내용을 입력해주세요.');
+                return;
+            }
+
+            // Update local state to simulate submission
+            currentWorker.status = 'reported';
+            
+            closeHealthModal();
+            
+            // Show Toast
+            const toast = document.getElementById('toastNotification');
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('top-20');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+                toast.classList.remove('top-20');
+                // Re-render list to show updated status
+                renderWorkerList(currentWorker.line);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
